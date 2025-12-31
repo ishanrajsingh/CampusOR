@@ -22,9 +22,9 @@ interface KioskData {
   lastUpdated: string;
 }
 
-// Simulate data updates by slightly modifying the mock data
-function getUpdatedMockData(): KioskData {
-  const base: KioskData = {
+// Get initial mock data with proper typing
+function getInitialMockData(): KioskData {
+  return {
     ...kioskQueueMock,
     counters: kioskQueueMock.counters.map((c): Counter => ({
       counterId: c.counterId,
@@ -32,42 +32,51 @@ function getUpdatedMockData(): KioskData {
       currentToken: c.currentToken,
     })),
   };
-  
-  // Simulate token progression - move next token to now serving occasionally
-  // This is just for demonstration - in real app, this would come from WebSocket
-  const random = Math.random();
-  if (random > 0.7 && base.nextTokens.length > 0) {
-    // Move first next token to now serving
-    base.nowServing.tokenNumber = base.nextTokens[0];
-    base.nextTokens = base.nextTokens.slice(1);
-    // Add a new token to the end
-    const lastTokenNum = parseInt(base.nextTokens[base.nextTokens.length - 1]?.split("-")[1] || "046");
-    base.nextTokens.push(`T-${String(lastTokenNum + 1).padStart(3, "0")}`);
+}
+
+// Simulate data updates - advance to next token every 5 seconds
+function getUpdatedMockData(currentData: KioskData): KioskData {
+  // If no more tokens in queue, reset to initial mock data
+  if (currentData.nextTokens.length === 0) {
+    return getInitialMockData();
   }
-  
+
+  // Create a copy of current data
+  const updated: KioskData = {
+    ...currentData,
+    nextTokens: [...currentData.nextTokens],
+    counters: currentData.counters.map((c) => ({ ...c })),
+  };
+
+  // Move the first token from nextTokens to nowServing
+  const nextToken = updated.nextTokens[0];
+  updated.nowServing = {
+    tokenNumber: nextToken,
+    counter: updated.nowServing.counter, // Keep the same counter
+  };
+
+  // Remove the first token from nextTokens
+  updated.nextTokens = updated.nextTokens.slice(1);
+
   // Update counter statuses
-  base.counters = base.counters.map((counter): Counter => {
-    if (counter.counterId === base.nowServing.counter) {
-      return { ...counter, status: "serving" as const, currentToken: base.nowServing.tokenNumber };
+  // Mark the previous serving counter as busy (if it had a token)
+  updated.counters = updated.counters.map((counter): Counter => {
+    if (counter.counterId === updated.nowServing.counter) {
+      // Current counter is now serving the new token
+      return { ...counter, status: "serving" as const, currentToken: updated.nowServing.tokenNumber };
     } else if (counter.status === "serving") {
+      // Previous serving counter becomes busy
       return { ...counter, status: "busy" as const, currentToken: counter.currentToken };
     }
     return counter;
   });
-  
-  base.lastUpdated = new Date().toISOString();
-  return base;
+
+  updated.lastUpdated = new Date().toISOString();
+  return updated;
 }
 
 export default function Kiosk() {
-  const initialData: KioskData = {
-    ...kioskQueueMock,
-    counters: kioskQueueMock.counters.map((c): Counter => ({
-      counterId: c.counterId,
-      status: c.status as "busy" | "serving" | "idle",
-      currentToken: c.currentToken,
-    })),
-  };
+  const initialData: KioskData = getInitialMockData();
   const [data, setData] = useState<KioskData>(initialData);
   const [formattedTime, setFormattedTime] = useState<string>("");
 
@@ -77,9 +86,11 @@ export default function Kiosk() {
 
     // Update mock data every 5 seconds to simulate live updates
     const interval = setInterval(() => {
-      const newData = getUpdatedMockData();
-      setData(newData);
-      setFormattedTime(new Date(newData.lastUpdated).toLocaleTimeString());
+      setData((currentData) => {
+        const newData = getUpdatedMockData(currentData);
+        setFormattedTime(new Date(newData.lastUpdated).toLocaleTimeString());
+        return newData;
+      });
     }, 5000);
 
     return () => clearInterval(interval);
