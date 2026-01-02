@@ -102,7 +102,7 @@ export default function AdminSidebar() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-transparent hover:[&::-webkit-scrollbar-thumb]:bg-[#94A3B8]/50 [&::-webkit-scrollbar-track]:bg-transparent">
           <p className="px-4 text-xs font-semibold text-[#94A3B8] uppercase tracking-wider mb-4">
             Navigation
           </p>
