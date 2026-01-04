@@ -21,7 +21,7 @@ export default function LandingPage() {
                 Logout
               </button>
               <Link
-                href="/dashboard"
+                href="/dashboard/user"
                 className="bg-black text-white px-4 py-2 rounded-md text-sm cursor-pointer hover:bg-gray-800 transition-colors"
               >
                 Dashboard
