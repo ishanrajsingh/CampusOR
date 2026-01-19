@@ -1,4 +1,5 @@
-import { Token, TokenStatus, Queue } from "../queue/queue.model.js";
+import { Queue } from "../queue/queue.model.js";
+import { Token, TokenStatus } from "../queue/token.model.js";
 
 /**
  * Admin Analytics Service

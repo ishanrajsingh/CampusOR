@@ -1,7 +1,8 @@
 import { Server as HttpServer } from "http";
 import { Server, Socket } from "socket.io";
 import { TokenService } from "../modules/queue/services/token.service.js";
-import { Queue, Token, TokenStatus } from "../modules/queue/queue.model.js";
+import { Queue } from "../modules/queue/queue.model.js";
+import { Token, TokenStatus } from "../modules/queue/token.model.js";
 
 interface QueueSnapshot {
   queue: {
