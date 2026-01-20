@@ -5,6 +5,7 @@ import {
   removeToken,
   setNowServing,
 } from "./redisQueue.service.js";
+import { checkRateLimits, recordJoin } from "./rateLimit.service.js";
 
 export interface TokenResponse {
   success: boolean;
@@ -16,6 +17,7 @@ export interface TokenResponse {
     createdAt: string;
   };
   error?: string;
+  retryAfterSeconds?: number;
 }
 
 export class TokenService {
@@ -30,6 +32,29 @@ export class TokenService {
         return {
           success: false,
           error: "UserId is required to generate a token",
+        };
+      }
+
+      // Rate limit check before allowing queue join
+      const rateLimitResult = await checkRateLimits(userId, queueId);
+      if (!rateLimitResult.allowed) {
+        return {
+          success: false,
+          error: rateLimitResult.message,
+          retryAfterSeconds: rateLimitResult.retryAfterSeconds,
+        };
+      }
+
+      // Check if user is already in any queue (since userId is unique index)
+      const existingToken = await Token.findOne({
+        userId: new Types.ObjectId(userId),
+        status: { $in: [TokenStatus.WAITING, TokenStatus.SERVED] }
+      });
+
+      if (existingToken) {
+        return {
+          success: false,
+          error: "You are already in a queue",
         };
       }
 
@@ -58,6 +83,9 @@ export class TokenService {
 
       await enqueueToken(queue._id.toString(), token._id.toString(), seq);
 
+      // Record successful join for rate limiting
+      await recordJoin(userId, queueId);
+
       return {
         success: true,
         token: {
@@ -68,8 +96,17 @@ export class TokenService {
           createdAt: token.createdAt.toISOString(),
         },
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error("Token generation error:", error);
+
+      // Handle duplicate key error specifically (race condition fallback)
+      if (error.code === 11000) {
+        return {
+          success: false,
+          error: "You are already in a queue",
+        };
+      }
+
       return {
         success: false,
         error: "Failed to generate token",

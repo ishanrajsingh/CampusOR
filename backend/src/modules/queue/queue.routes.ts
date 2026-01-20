@@ -26,8 +26,8 @@ router.get(
 );
 
 // tokens
-// Public endpoint for users/kiosks to get a token
-router.post("/:queueId/tokens", generateToken);
+// Authenticated endpoint for users to get a token (rate limited per user)
+router.post("/:queueId/tokens", verifyJWT, generateToken);
 
 // Only operators/admins can update status (serve/skip)
 router.patch(

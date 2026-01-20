@@ -10,6 +10,7 @@ import {
   removeToken,
   setNowServing,
 } from "../queue/services/redisQueue.service.js";
+import { TokenService } from "../queue/services/token.service.js";
 
 interface CheckInQueueInput {
   userId: string;
@@ -342,28 +343,22 @@ export const joinQueueWithToken = async ({
     throw { statusCode: 404, message: "User not found" };
   }
 
-  // Check Token table as source of truth
-  const activeToken = await getActiveToken(userId);
-  if (activeToken) {
+  // Use TokenService to generate token (handles rate limiting and duplicate checks)
+  const tokenResponse = await TokenService.generateToken(queueId, userId);
+
+  if (!tokenResponse.success || !tokenResponse.token) {
     throw {
-      statusCode: 409,
-      message: "You are already in a queue. Please leave it first.",
+      statusCode: tokenResponse.retryAfterSeconds ? 429 : 409, // Map errors appropriately
+      message: tokenResponse.error || "Failed to join queue",
+      retryAfterSeconds: tokenResponse.retryAfterSeconds, // Pass through retry header info if needed
     };
   }
 
-  // Generate token with userId
-  const token = await Token.create({
-    queue: queue._id,
-    userId: new Types.ObjectId(userId),
-    seq: queue.nextSequence,
-    status: TokenStatus.WAITING,
-  });
+  // Note: TokenService already enqueues the token and increments sequence
 
-  await enqueueToken(queue._id.toString(), token._id.toString(), token.seq);
-
-  // Increment queue sequence
-  queue.nextSequence += 1;
-  await queue.save();
+  // Fetch the created token doc to get full details matching the existing service response shape
+  const token = await Token.findById(tokenResponse.token.id);
+  if (!token) throw { statusCode: 500, message: "Token created but not found" };
 
   // Update cache
   user.currentQueue = queue._id;
