@@ -1,5 +1,6 @@
 import { User } from "../auth/user.model.js";
-import { Queue, Token, TokenStatus } from "../queue/queue.model.js";
+import { Queue } from "../queue/queue.model.js";
+import { Token, TokenStatus } from "../queue/token.model.js";
 import { Types } from "mongoose";
 import {
   sendQueueJoinedEmail,

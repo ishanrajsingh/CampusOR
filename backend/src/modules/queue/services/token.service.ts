@@ -1,4 +1,5 @@
-import { Queue, Token, TokenStatus } from "../queue.model.js";
+import { Queue } from "../queue.model.js";
+import { Token, TokenStatus } from "../token.model.js";
 import { Types } from "mongoose";
 import {
   enqueueToken,

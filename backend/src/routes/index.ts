@@ -11,7 +11,6 @@ import userStatusRouter from "../modules/updateUserStatus/userStatus.routes.js";
 
 const router = Router();
 
-
 router.use("/auth", authRouter);
 router.use("/queues", queueRouter);
 router.use("/operator", operatorRouter);

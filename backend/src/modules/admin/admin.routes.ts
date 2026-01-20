@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { verifyJWT, authorize } from "../../middlewares/auth.js";
 import {
+  getAdmins,
   getDashboard,
   getDashboardSummary,
   getQueueLoadAnalytics,
@@ -15,8 +16,9 @@ const router = Router();
  * All routes are protected by verifyJWT + authorize("admin")
  */
 
-// Example protected admin endpoint
 router.get("/dashboard", verifyJWT, authorize("admin"), getDashboard);
+
+router.get("/admins", verifyJWT, authorize("admin"), getAdmins);
 
 // Dashboard Summary - Overview metrics
 router.get(

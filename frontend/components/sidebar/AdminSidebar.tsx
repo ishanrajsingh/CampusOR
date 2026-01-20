@@ -11,6 +11,7 @@ import {
   Users,
   BarChart3,
   Settings,
+  ShieldUser,
   User,
   LogOut,
   Menu,
@@ -37,6 +38,7 @@ const navItems: NavItem[] = [
     label: "Analytics",
     icon: <BarChart3 size={20} />,
   },
+  { href: "/admin/manage-admins", label: "Manage Admins", icon: <ShieldUser size={20} /> },
   { href: "/admin/settings", label: "Settings", icon: <Settings size={20} /> },
 ];
 
@@ -67,7 +69,7 @@ export default function AdminSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-white rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors"
+        className="lg:hidden fixed top-4 left-4 z-60 p-2 bg-white rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors"
         aria-label="Toggle menu"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}

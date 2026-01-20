@@ -302,20 +302,21 @@ export interface CreateAdminDetails {
   name: string;
   email: string;
   password: string;
-  collegeEmail: string;
+  createdByAdminId: string;
+}
+
+export interface CreateAdminResponse {
+  success: boolean;
+  message: string;
 }
 
 export const createAdminUser = async (
   input: CreateAdminDetails
-): Promise<SafeUser> => {
-  const { name, email, password, collegeEmail } = input;
-
-  if (!collegeEmail) {
-    throw new Error("CollegeEmail is required for admin role");
-  }
+): Promise<CreateAdminResponse> => {
+  const { name, email, password, createdByAdminId } = input;
 
   // Check if email already exists
-  const existing = await User.findOne({ $or: [{ email }, { collegeEmail }] });
+  const existing = await User.findOne({ email });
   if (existing) {
     throw new Error("Email or college email is already registered");
   }
@@ -329,14 +330,24 @@ export const createAdminUser = async (
     email,
     password: hashedPassword,
     role: "admin" as UserRole,
-    collegeEmail,
-    emailVerified: true,
-    emailOtpHash: null,
-    emailOtpExpiresAt: null,
+    emailVerified: false,
+    createdByAdmin: createdByAdminId
   };
 
   const userResult = await User.create(userData);
   const user = Array.isArray(userResult) ? userResult[0] : userResult;
 
-  return buildSafeUser(user);
+  const { otp } = await applyEmailOtp(user);
+
+  try {
+    await sendEmailVerificationOtp(user.email, user.name, otp, OTP_EXPIRY_MINUTES);
+  } catch (error) {
+    // Email failures should not block signup
+    console.error("Failed to send verification email:", error);
+  }
+
+  return {
+    success: true,
+    message: "Admin invitation sent"
+  };
 };

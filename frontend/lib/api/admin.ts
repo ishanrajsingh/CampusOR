@@ -129,3 +129,55 @@ export const fetchTokenStatusAnalytics = async (): Promise<TokenStatusCount[]> =
 
   return response.json();
 };
+
+export interface AdminUser {
+  _id: string;
+  email: string;
+  emailVerified: boolean;
+  createdByAdmin: {
+    _id: string;
+  } | null;
+}
+
+/**
+ * Fetch all admin users
+ */
+export const fetchAdmins = async (): Promise<AdminUser[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/admin/admins`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch admins: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+/**
+ * Create a new admin (direct creation)
+ */
+export const createAdmin = async (
+  name: string,
+  email: string,
+  password: string
+) => {
+  const response = await fetch(`${API_BASE_URL}/api/admin/create`, {
+    method: "POST",
+    headers: getAuthHeaders(),
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.error || "Failed to create admin");
+  }
+
+  return response.json();
+};
+

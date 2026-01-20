@@ -1,5 +1,6 @@
 import { Response } from "express";
-import { Queue, Token, TokenStatus } from "./queue.model.js";
+import { Queue } from "./queue.model.js";
+import { Token, TokenStatus } from "./token.model.js";
 import { TokenService } from "./services/token.service.js";
 import { AuthRequest } from "../../middlewares/auth.js";
 import { ensureQueueAccess } from "../operator/operator.utils.js";

@@ -1,12 +1,12 @@
 import { Response } from "express";
 import { AuthRequest } from "../../middlewares/auth.js";
 import * as adminService from "./admin.service.js";
+import { User } from "../auth/user.model.js";
 
 /**
  * Admin Controllers
  * All endpoints are protected by verifyJWT + authorize("admin") middleware
  */
-
 // Example admin endpoint - Dashboard
 export const getDashboard = (req: AuthRequest, res: Response) => {
   return res.status(200).json({
@@ -17,6 +17,26 @@ export const getDashboard = (req: AuthRequest, res: Response) => {
     },
   });
 };
+
+/**
+ * Get a list of all the admins
+ */
+export const getAdmins = async (req: AuthRequest, res: Response) => {
+  try {
+    const admins = await User.find({ role: "admin" })
+      .select("_id name email emailVerified createdByAdmin createdAt")
+      .populate("createdByAdmin", "email name")
+      .sort({ createdAt: 1 }); // bootstrap admin first
+
+    return res.status(200).json(admins);
+  } catch (error) {
+    console.error("Failed to fetch admins:", error);
+    return res.status(500).json({
+      message: "Failed to fetch admins",
+    });
+  }
+};
+
 
 /**
  * GET /api/admin/dashboard/summary
