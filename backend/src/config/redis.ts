@@ -1,4 +1,4 @@
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 import { env } from "./env.js";
 
 let redisClient: Redis | null = null;
@@ -36,3 +36,4 @@ export const initializeRedis = (): void => {
 export const getRedisClient = (): Redis | null => redisClient;
 
 export const isRedisReady = (): boolean => redisReady;
+

@@ -70,7 +70,14 @@ export async function generateToken(req: AuthRequest, res: Response) {
   console.log(`[Token] Result:`, result);
 
   if (!result.success) {
-    return res.status(400).json(result);
+    // Return 429 for rate limiting, 409 for conflict, 400 for other errors
+    let status = 400;
+    if (result.retryAfterSeconds) {
+      status = 429;
+    } else if (result.error && result.error.includes("already")) {
+      status = 409;
+    }
+    return res.status(status).json(result);
   }
 
   await broadcastQueueUpdate(queueId);
