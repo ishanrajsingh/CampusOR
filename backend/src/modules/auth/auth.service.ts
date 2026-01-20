@@ -302,7 +302,6 @@ export interface CreateAdminDetails {
   name: string;
   email: string;
   password: string;
-  collegeEmail: string;
   createdByAdminId: string;
 }
 
@@ -314,14 +313,10 @@ export interface CreateAdminResponse {
 export const createAdminUser = async (
   input: CreateAdminDetails
 ): Promise<CreateAdminResponse> => {
-  const { name, email, password, collegeEmail, createdByAdminId } = input;
-
-  if (!collegeEmail) {
-    throw new Error("CollegeEmail is required for admin role");
-  }
+  const { name, email, password, createdByAdminId } = input;
 
   // Check if email already exists
-  const existing = await User.findOne({ $or: [{ email }, { collegeEmail }] });
+  const existing = await User.findOne({ email });
   if (existing) {
     throw new Error("Email or college email is already registered");
   }
@@ -335,7 +330,6 @@ export const createAdminUser = async (
     email,
     password: hashedPassword,
     role: "admin" as UserRole,
-    collegeEmail,
     emailVerified: false,
     createdByAdmin: createdByAdminId
   };
