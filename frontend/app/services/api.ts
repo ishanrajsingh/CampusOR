@@ -31,6 +31,18 @@ class ApiService {
     return headers;
   }
 
+  private unauthorizedCallback: (() => void) | null = null;
+
+  public setUnauthorizedCallback(callback: () => void) {
+    this.unauthorizedCallback = callback;
+  }
+
+  private handleUnauthorized() {
+    if (this.unauthorizedCallback) {
+      this.unauthorizedCallback();
+    }
+  }
+
   async post(endpoint: string, data: any, includeAuth: boolean = false) {
     const response = await fetch(this.buildUrl(endpoint), {
       method: "POST",
@@ -39,6 +51,10 @@ class ApiService {
         : { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
+    if (response.status === 401 || response.status === 403) {
+      this.handleUnauthorized();
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -57,6 +73,10 @@ class ApiService {
         ? this.getAuthHeaders()
         : { "Content-Type": "application/json" },
     });
+
+    if (response.status === 401 || response.status === 403) {
+      this.handleUnauthorized();
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -77,6 +97,10 @@ class ApiService {
       body: JSON.stringify(data),
     });
 
+    if (response.status === 401 || response.status === 403) {
+      this.handleUnauthorized();
+    }
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
@@ -95,6 +119,10 @@ class ApiService {
         : { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
+    if (response.status === 401 || response.status === 403) {
+      this.handleUnauthorized();
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -121,6 +149,10 @@ class ApiService {
         ? this.getAuthHeaders()
         : { "Content-Type": "application/json" },
     });
+
+    if (response.status === 401 || response.status === 403) {
+      this.handleUnauthorized();
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));

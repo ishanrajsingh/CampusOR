@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { jwtDecode } from "jwt-decode";
+import { apiService } from "../services/api";
 
 export type UserRole = "user" | "operator" | "admin";
 
@@ -37,13 +39,23 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const decodeToken = (jwt: string): Partial<AuthUser> | null => {
   try {
-    const payload = JSON.parse(atob(jwt.split(".")[1] || ""));
+    const decoded = jwtDecode<{ sub: string; role: UserRole; id?: string }>(jwt);
     return {
-      id: payload.sub,
-      role: payload.role,
+      id: decoded.sub || decoded.id,
+      role: decoded.role,
     };
   } catch {
     return null;
+  }
+};
+
+const isTokenValid = (jwt: string): boolean => {
+  try {
+    const decoded = jwtDecode<{ exp?: number }>(jwt);
+    if (!decoded.exp) return true; // Assume valid if no exp claim
+    return decoded.exp * 1000 > Date.now();
+  } catch {
+    return false;
   }
 };
 
@@ -52,11 +64,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const logout = React.useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+    setToken(null);
+    setUser(null);
+  }, []);
+
   useEffect(() => {
+    // Register the unauthorized callback to trigger logout on 401/403
+    apiService.setUnauthorizedCallback(logout);
+
     const storedToken = localStorage.getItem(TOKEN_KEY);
     const storedUser = localStorage.getItem(USER_KEY);
 
     if (storedToken) {
+      if (!isTokenValid(storedToken)) {
+        console.warn("Stored token is expired or invalid. Logging out.");
+        logout();
+        setIsLoading(false);
+        return;
+      }
+
       setToken(storedToken);
 
       if (storedUser) {
@@ -83,9 +112,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
     setIsLoading(false);
-  }, []);
+  }, [logout]);
 
-  const login = (jwt: string, authUser?: AuthUser | null) => {
+  const login = React.useCallback((jwt: string, authUser?: AuthUser | null) => {
     localStorage.setItem(TOKEN_KEY, jwt);
     setToken(jwt);
 
@@ -110,24 +139,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(fallbackUser);
       }
     }
-  };
+  }, []);
 
-  const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setToken(null);
-    setUser(null);
-  };
+
 
   const isAuthenticated = !!token;
   const role = user?.role ?? null;
   const isVerified = !!user?.emailVerified;
 
-  const hasRole = (roles?: UserRole[]) => {
+  const hasRole = React.useCallback((roles?: UserRole[]) => {
     if (!roles || roles.length === 0) return true;
     if (!role) return false;
     return roles.includes(role);
-  };
+  }, [role]);
 
   const computed = useMemo(
     () => ({
